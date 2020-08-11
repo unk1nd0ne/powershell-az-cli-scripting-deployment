@@ -35,10 +35,8 @@ chown $api_service_user /opt/coding-events-api/
 cat << EOF > /etc/systemd/system/coding-events-api.service
 [Unit]
 Description=Coding Events API
-
 [Install]
 WantedBy=multi-user.target
-
 [Service]
 User=$api_service_user
 WorkingDirectory=$api_working_dir
