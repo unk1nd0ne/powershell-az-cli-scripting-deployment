@@ -50,8 +50,6 @@ az network nsg rule create --nsg-name $securityGroup --name Port_443_In --access
 
 az keyvault create -n $kvName --enable-soft-delete false --enabled-for-deployment true
 
-az keyvault set-policy -n "$kvName" --object-id "$systemAssignedIdentity" --secret-permissions get list
-
 # TODO: create KV secret (database connection string)
 
 az keyvault secret set --vault-name "$kvName" -n "$kvSecretName" --value "$kvSecretValue"
@@ -80,6 +78,10 @@ Set-Location $workingDir
 
 # TODO: set KV access-policy (using the vm ``systemAssignedIdentity``)
 
+az keyvault set-policy -n "$kvName" --object-id "$systemAssignedIdentity" --secret-permissions delete get list set
+
+# Configure deploy script
+
 $deployUserLine = Get-Content deliver-deploy.sh | Select-String "github_username=" | Select-Object -ExpandProperty Line
 $deployBranchLine = Get-Content deliver-deploy.sh | Select-String "solution_branch=" | Select-Object -ExpandProperty Line
 $deployScript = Get-Content deliver-deploy.sh
@@ -87,12 +89,13 @@ $deployScript = Get-Content deliver-deploy.sh
 $deployScript = $deployScript | ForEach-Object {$_ -replace $deployUserLine,"github_username=$githubUser"}
 $deployScript | ForEach-Object {$_ -replace $deployBranchLine,"solution_branch=$codingEventsBranch"} | Set-Content deliver-deploy.sh
 
+# Execute cofiguration/deploy scripts on vm
+
 az vm run-command invoke --command-id RunShellScript --scripts @vm-configuration-scripts/1configure-vm.sh
 
 az vm run-command invoke --command-id RunShellScript --scripts @vm-configuration-scripts/2configure-ssl.sh
 
 az vm run-command invoke --command-id RunShellScript --scripts @deliver-deploy.sh
-
 
 # TODO: print VM public IP address to STDOUT or save it as a file
 Write-Output $publicIp
